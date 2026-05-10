@@ -1,7 +1,7 @@
 import mammoth from "mammoth";
-import { extractText, getDocumentProxy } from "unpdf";
 
 async function extractPdfText(fileBuffer: Buffer): Promise<string> {
+  const { extractText, getDocumentProxy } = await import("unpdf");
   const uint8 = new Uint8Array(fileBuffer);
   const pdf = await getDocumentProxy(uint8);
   const { text } = await extractText(pdf, { mergePages: true });

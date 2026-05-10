@@ -1,6 +1,10 @@
-import { pipeline } from "@xenova/transformers";
-
 let extractor: unknown = null;
+
+/** Dynamic import avoids loading ONNX/transformers at cold start when unused (fixes Vercel crashes / HTML error pages). */
+async function loadPipeline() {
+  const { pipeline } = await import("@xenova/transformers");
+  return pipeline;
+}
 
 /**
  * On Vercel serverless, downloading and running the embedding model often hits
@@ -15,6 +19,7 @@ function shouldUseSemanticEmbeddings(): boolean {
 
 async function getEmbeddingModel() {
   if (!extractor) {
+    const pipeline = await loadPipeline();
     extractor = await pipeline("feature-extraction", "Xenova/all-MiniLM-L6-v2");
   }
   return extractor;

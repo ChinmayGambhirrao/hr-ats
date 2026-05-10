@@ -12,12 +12,12 @@ export const runtime = "nodejs";
 export const maxDuration = 120;
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session || !session.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  
   try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const formData = await req.formData();
     const file = formData.get("resume") as File;
     const jobDescriptionId = formData.get("jobDescriptionId") as string;
@@ -83,18 +83,30 @@ export async function POST(req: NextRequest) {
       }
     });
     
-    return NextResponse.json({ 
-      resume, 
-      score, 
-      matchedKeywords, 
-      missingKeywords,
-      keywordScore,
-      semanticScore
-    });
-    
+    return NextResponse.json(
+      jsonSafe({
+        resume: {
+          id: resume.id,
+          fileName: resume.fileName,
+          fileUrl: resume.fileUrl,
+          userId: resume.userId,
+          createdAt: resume.createdAt,
+          scores: resume.scores,
+        },
+        score,
+        matchedKeywords,
+        missingKeywords,
+        keywordScore,
+        semanticScore
+      })
+    );
   } catch (error: unknown) {
     console.error("Upload error:", error);
     const message = error instanceof Error ? error.message : "Upload failed";
     return NextResponse.json({ error: message }, { status: 500 });
   }
+}
+
+function jsonSafe(value: unknown) {
+  return JSON.parse(JSON.stringify(value));
 }
