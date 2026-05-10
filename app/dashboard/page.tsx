@@ -10,6 +10,15 @@ interface Job {
   description: string;
 }
 
+interface UploadResult {
+  resume: { id: string };
+  score: number;
+  matchedKeywords: string[];
+  missingKeywords: string[];
+  keywordScore: number;
+  semanticScore: number;
+}
+
 export default function Dashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -17,19 +26,11 @@ export default function Dashboard() {
   const [selectedJob, setSelectedJob] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<UploadResult | null>(null);
   const [jobTitle, setJobTitle] = useState("");
   const [jobDesc, setJobDesc] = useState("");
   const [creatingJob, setCreatingJob] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-    } else if (status === "authenticated") {
-      fetchJobs();
-    }
-  }, [session, status, router]);
 
   const fetchJobs = async () => {
     try {
@@ -42,6 +43,17 @@ export default function Dashboard() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/login");
+    } else if (status === "authenticated") {
+      const timerId = setTimeout(() => {
+        void fetchJobs();
+      }, 0);
+      return () => clearTimeout(timerId);
+    }
+  }, [session, status, router]);
 
   const createJob = async () => {
     if (!jobTitle || !jobDesc) {
@@ -66,7 +78,7 @@ export default function Dashboard() {
       } else {
         alert("Failed to create job");
       }
-    } catch (error) {
+    } catch {
       alert("Error creating job");
     } finally {
       setCreatingJob(false);
@@ -121,7 +133,7 @@ export default function Dashboard() {
       } else {
         alert(data.error || "Upload failed");
       }
-    } catch (error) {
+    } catch {
       alert("Error uploading file");
     } finally {
       setUploading(false);
@@ -147,7 +159,7 @@ export default function Dashboard() {
       } else {
         alert("Failed to add to shortlist");
       }
-    } catch (error) {
+    } catch {
       alert("Error adding to shortlist");
     }
   };
@@ -184,7 +196,7 @@ export default function Dashboard() {
                     Select existing job
                   </label>
                   <select 
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-black bg-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     value={selectedJob}
                     onChange={(e) => setSelectedJob(e.target.value)}
                   >
@@ -205,7 +217,7 @@ export default function Dashboard() {
                   <input
                     type="text"
                     placeholder="Job Title"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md mb-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md mb-3 text-black placeholder:text-gray-500 bg-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     value={jobTitle}
                     onChange={(e) => setJobTitle(e.target.value)}
                   />
@@ -213,7 +225,7 @@ export default function Dashboard() {
                   <textarea
                     placeholder="Paste job description here..."
                     rows={6}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md mb-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md mb-3 text-black placeholder:text-gray-500 bg-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     value={jobDesc}
                     onChange={(e) => setJobDesc(e.target.value)}
                   />

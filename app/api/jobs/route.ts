@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+export const runtime = "nodejs";
+
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session || !session.user) {
@@ -25,7 +27,7 @@ export async function POST(req: NextRequest) {
     });
     
     return NextResponse.json(job);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to create job" }, { status: 500 });
   }
 }
@@ -43,7 +45,7 @@ export async function GET() {
     });
     
     return NextResponse.json(jobs);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to fetch jobs" }, { status: 500 });
   }
 }

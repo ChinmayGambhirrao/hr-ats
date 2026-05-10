@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+export const runtime = "nodejs";
+
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session || !session.user) {
@@ -25,7 +27,7 @@ export async function POST(req: NextRequest) {
     });
     
     return NextResponse.json(shortlist);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to add to shortlist" }, { status: 500 });
   }
 }
@@ -50,7 +52,7 @@ export async function GET() {
     });
     
     return NextResponse.json(shortlist);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to fetch shortlist" }, { status: 500 });
   }
 }

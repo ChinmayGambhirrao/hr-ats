@@ -6,6 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { parseResumeBuffer } from "@/lib/parseResume";
 import { calculateATSScore } from "@/lib/scoring";
 
+export const runtime = "nodejs";
+
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session || !session.user) {
@@ -43,10 +45,18 @@ export async function POST(req: NextRequest) {
     const { score, matchedKeywords, missingKeywords, keywordScore, semanticScore } = 
       await calculateATSScore(extractedText, jobDesc.description);
     
+    const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
+    if (!blobToken) {
+      return NextResponse.json(
+        { error: "Server storage is not configured. Set BLOB_READ_WRITE_TOKEN on Vercel." },
+        { status: 500 }
+      );
+    }
+
     // Upload to Vercel Blob
     const blob = await put(file.name, buffer, {
       access: 'private',
-      token: process.env.BLOB_READ_WRITE_TOKEN
+      token: blobToken
     });
     
     // Save to database
@@ -79,8 +89,9 @@ export async function POST(req: NextRequest) {
       semanticScore
     });
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Upload error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Upload failed";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
