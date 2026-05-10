@@ -8,9 +8,7 @@ import { calculateATSScore } from "@/lib/scoring";
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  const userId = (session?.user as { id?: string } | undefined)?.id;
-
-  if (!session || !userId) {
+  if (!session || !session.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   
@@ -45,30 +43,19 @@ export async function POST(req: NextRequest) {
     const { score, matchedKeywords, missingKeywords, keywordScore, semanticScore } = 
       await calculateATSScore(extractedText, jobDesc.description);
     
-    // Upload to Vercel Blob when token is configured.
-    // In local/dev setups without a valid token, continue scoring and persist with a local placeholder URL.
-    const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
-    let fileUrl = `local://resume/${Date.now()}-${encodeURIComponent(file.name)}`;
-
-    if (blobToken && blobToken !== "youll-get-this-from-vercel-later") {
-      try {
-        const blob = await put(file.name, buffer, {
-          access: "private",
-          token: blobToken,
-        });
-        fileUrl = blob.url;
-      } catch (blobError) {
-        console.warn("Blob upload failed, using local placeholder URL:", blobError);
-      }
-    }
+    // Upload to Vercel Blob
+    const blob = await put(file.name, buffer, {
+      access: 'private',
+      token: process.env.BLOB_READ_WRITE_TOKEN
+    });
     
     // Save to database
     const resume = await prisma.resume.create({
       data: {
         fileName: file.name,
-        fileUrl,
+        fileUrl: blob.url,
         extractedText,
-        userId,
+        userId: session.user.id,
         scores: {
           create: {
             jobDescriptionId,
@@ -92,9 +79,8 @@ export async function POST(req: NextRequest) {
       semanticScore
     });
     
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error("Upload error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Something went wrong";
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
