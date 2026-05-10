@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  name          String?
+  resumes       Resume[]
+  jobDescriptions JobDescription[]
+  shortlists    Shortlist[]
+  createdAt     DateTime  @default(now())
+}
+
+model Resume {
+  id          String   @id @default(cuid())
+  fileName    String
+  fileUrl     String
+  extractedText String @db.Text
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scores      Score[]
+  shortlists  Shortlist[]
+  createdAt   DateTime @default(now())
+}
+
+model JobDescription {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @db.Text
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scores      Score[]
+  createdAt   DateTime @default(now())
+}
+
+model Score {
+  id               String   @id @default(cuid())
+  resumeId         String
+  jobDescriptionId String
+  score            Int
+  matchedKeywords  String[]
+  missingKeywords  String[]
+  resume           Resume   @relation(fields: [resumeId], references: [id])
+  jobDescription   JobDescription @relation(fields: [jobDescriptionId], references: [id])
+  createdAt        DateTime @default(now())
+}
+
+model Shortlist {
+  id        String   @id @default(cuid())
+  userId    String
+  resumeId  String
+  jobId     String?
+  notes     String?
+  user      User     @relation(fields: [userId], references: [id])
+  resume    Resume   @relation(fields: [resumeId], references: [id])
+  createdAt DateTime @default(now())
+}
