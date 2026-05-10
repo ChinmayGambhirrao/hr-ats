@@ -1,6 +1,17 @@
 import { pipeline } from "@xenova/transformers";
 
-let extractor: any = null;
+let extractor: unknown = null;
+
+/**
+ * On Vercel serverless, downloading and running the embedding model often hits
+ * cold-start time / memory limits and returns 504 — so semantic scoring is off
+ * unless ENABLE_SEMANTIC_SCORING=true (and a long enough maxDuration on Pro).
+ */
+function shouldUseSemanticEmbeddings(): boolean {
+  if (process.env.ENABLE_SEMANTIC_SCORING === "true") return true;
+  if (process.env.ENABLE_SEMANTIC_SCORING === "false") return false;
+  return process.env.VERCEL !== "1";
+}
 
 async function getEmbeddingModel() {
   if (!extractor) {
@@ -44,21 +55,36 @@ export async function calculateATSScore(resumeText: string, jobText: string) {
   const keywordScore = jobKeywords.length > 0 
     ? (matchedKeywords.length / jobKeywords.length) * 100 
     : 0;
-  
+
+  const keywordOnly = {
+    score: Math.round(keywordScore),
+    matchedKeywords,
+    missingKeywords,
+    keywordScore: Math.round(keywordScore),
+    semanticScore: 0
+  };
+
+  if (!shouldUseSemanticEmbeddings()) {
+    return keywordOnly;
+  }
+
   try {
-    const model = await getEmbeddingModel();
-    
+    const model = (await getEmbeddingModel()) as (
+      text: string,
+      opts: { pooling: string }
+    ) => Promise<{ data: ArrayLike<number> }>;
+
     const resumeEmbedding = await model(resumeText.slice(0, 3000), { pooling: "mean" });
     const jobEmbedding = await model(jobText.slice(0, 3000), { pooling: "mean" });
-    
+
     const similarity = cosineSimilarity(
       Array.from(resumeEmbedding.data),
       Array.from(jobEmbedding.data)
     );
-    
+
     const semanticScore = similarity * 100;
     const finalScore = Math.round(keywordScore * 0.4 + semanticScore * 0.6);
-    
+
     return {
       score: Math.min(100, Math.max(0, finalScore)),
       matchedKeywords,
@@ -68,12 +94,6 @@ export async function calculateATSScore(resumeText: string, jobText: string) {
     };
   } catch (error) {
     console.error("Semantic scoring failed:", error);
-    return {
-      score: Math.round(keywordScore),
-      matchedKeywords,
-      missingKeywords,
-      keywordScore: Math.round(keywordScore),
-      semanticScore: 0
-    };
+    return keywordOnly;
   }
 }

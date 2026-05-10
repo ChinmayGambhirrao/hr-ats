@@ -8,6 +8,9 @@ import { calculateATSScore } from "@/lib/scoring";
 
 export const runtime = "nodejs";
 
+/** Allow semantic scoring + large PDFs on Vercel Pro; Hobby still caps at ~10s. */
+export const maxDuration = 120;
+
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session || !session.user) {

@@ -108,8 +108,17 @@ export default function Dashboard() {
         method: "POST", 
         body: formData 
       });
-      
-      const data = await res.json();
+
+      const raw = await res.text();
+      let data: UploadResult & { error?: string };
+      try {
+        data = raw ? (JSON.parse(raw) as UploadResult & { error?: string }) : ({} as UploadResult);
+      } catch {
+        alert(
+          `Upload failed (${res.status}). The server did not return JSON — often a timeout or gateway error. First line: ${raw.slice(0, 120)}`
+        );
+        return;
+      }
       
       if (res.ok) {
         setResult(data);
