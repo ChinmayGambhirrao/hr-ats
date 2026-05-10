@@ -51,6 +51,8 @@ export default function Login() {
             <div>
               <input
                 type="email"
+                name="email"
+                autoComplete="email"
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                 placeholder="Email address"
@@ -61,6 +63,8 @@ export default function Login() {
             <div>
               <input
                 type="password"
+                name="password"
+                autoComplete="current-password"
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                 placeholder="Password"
@@ -81,7 +85,7 @@ export default function Login() {
           
           <div className="text-center">
             <Link href="/signup" className="text-sm text-blue-600 hover:text-blue-800">
-              Don't have an account? Sign up
+              Do not have an account? Sign up
             </Link>
           </div>
         </form>

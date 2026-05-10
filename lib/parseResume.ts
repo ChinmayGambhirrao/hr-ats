@@ -1,21 +1,27 @@
-import { PDFParse } from 'pdf-parse';
-import mammoth from 'mammoth';
+import mammoth from "mammoth";
+import { extractText, getDocumentProxy } from "unpdf";
 
-export async function parseResumeBuffer(fileBuffer: Buffer, fileName: string): Promise<string> {
-  if (fileName.toLowerCase().endsWith('.pdf')) {
-    const parser = new PDFParse({ data: fileBuffer });
-    try {
-      const data = await parser.getText();
-      return data.text;
-    } finally {
-      await parser.destroy();
-    }
-  } 
-  else if (fileName.toLowerCase().endsWith('.docx')) {
+async function extractPdfText(fileBuffer: Buffer): Promise<string> {
+  const uint8 = new Uint8Array(fileBuffer);
+  const pdf = await getDocumentProxy(uint8);
+  const { text } = await extractText(pdf, { mergePages: true });
+  return text;
+}
+
+export async function parseResumeBuffer(
+  fileBuffer: Buffer,
+  fileName: string
+): Promise<string> {
+  const lower = fileName.toLowerCase();
+
+  if (lower.endsWith(".pdf")) {
+    return extractPdfText(fileBuffer);
+  }
+
+  if (lower.endsWith(".docx")) {
     const result = await mammoth.extractRawText({ buffer: fileBuffer });
     return result.value;
   }
-  else {
-    throw new Error('Unsupported file format. Please upload PDF or DOCX files only.');
-  }
+
+  throw new Error("Unsupported file format. Please upload PDF or DOCX files only.");
 }

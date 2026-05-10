@@ -20,14 +20,6 @@ export default function ShortlistPage() {
   const [shortlist, setShortlist] = useState<ShortlistItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-    } else if (status === "authenticated") {
-      fetchShortlist();
-    }
-  }, [session, status, router]);
-
   const fetchShortlist = async () => {
     try {
       const res = await fetch("/api/shortlist");
@@ -39,6 +31,17 @@ export default function ShortlistPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/login");
+    } else if (status === "authenticated") {
+      const timerId = setTimeout(() => {
+        void fetchShortlist();
+      }, 0);
+      return () => clearTimeout(timerId);
+    }
+  }, [session, status, router]);
 
   if (status === "loading" || loading) {
     return (
